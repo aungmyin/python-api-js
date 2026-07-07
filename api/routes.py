@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 import models
 import schemas
+from auth_routes import get_current_admin_dependency
 
 router = APIRouter()
 
@@ -17,9 +18,10 @@ async def list_categories(db: Session = Depends(get_db)):
 @router.post("/categories", response_model=schemas.CategoryResponse)
 async def create_category(
     category: schemas.CategoryCreate,
+    current_user: models.User = Depends(get_current_admin_dependency),
     db: Session = Depends(get_db)
 ):
-    """Create a new category"""
+    """Create a new category (admin only)"""
     db_category = models.Category(
         name=category.name,
         description=category.description
@@ -43,9 +45,10 @@ async def get_category(category_id: int, db: Session = Depends(get_db)):
 async def update_category(
     category_id: int,
     category: schemas.CategoryUpdate,
+    current_user: models.User = Depends(get_current_admin_dependency),
     db: Session = Depends(get_db)
 ):
-    """Update a category"""
+    """Update a category (admin only)"""
     db_category = db.query(models.Category).filter(
         models.Category.id == category_id
     ).first()
@@ -62,8 +65,12 @@ async def update_category(
     return db_category
 
 @router.delete("/categories/{category_id}", status_code=204)
-async def delete_category(category_id: int, db: Session = Depends(get_db)):
-    """Delete a category"""
+async def delete_category(
+    category_id: int,
+    current_user: models.User = Depends(get_current_admin_dependency),
+    db: Session = Depends(get_db)
+):
+    """Delete a category (admin only)"""
     db_category = db.query(models.Category).filter(
         models.Category.id == category_id
     ).first()
@@ -109,9 +116,10 @@ async def list_products(
 @router.post("/products", response_model=schemas.ProductResponse)
 async def create_product(
     product: schemas.ProductCreate,
+    current_user: models.User = Depends(get_current_admin_dependency),
     db: Session = Depends(get_db)
 ):
-    """Create a new product"""
+    """Create a new product (admin only)"""
     # Verify category exists if provided
     if product.category_id:
         category = db.query(models.Category).filter(
@@ -146,9 +154,10 @@ async def get_product(product_id: int, db: Session = Depends(get_db)):
 async def update_product(
     product_id: int,
     product: schemas.ProductUpdate,
+    current_user: models.User = Depends(get_current_admin_dependency),
     db: Session = Depends(get_db)
 ):
-    """Update a product"""
+    """Update a product (admin only)"""
     db_product = db.query(models.Product).filter(
         models.Product.id == product_id
     ).first()
@@ -179,8 +188,12 @@ async def update_product(
     return db_product
 
 @router.delete("/products/{product_id}", status_code=204)
-async def delete_product(product_id: int, db: Session = Depends(get_db)):
-    """Delete a product"""
+async def delete_product(
+    product_id: int,
+    current_user: models.User = Depends(get_current_admin_dependency),
+    db: Session = Depends(get_db)
+):
+    """Delete a product (admin only)"""
     db_product = db.query(models.Product).filter(
         models.Product.id == product_id
     ).first()

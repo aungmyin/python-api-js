@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, status
 from sqlalchemy.orm import Session
 from database import get_db
 import schemas
@@ -61,7 +61,7 @@ async def login(
 
     # Create access token
     access_token = auth.create_access_token(
-        data={"sub": str(user.id), "email": user.email}
+        data={"sub": user.id}
     )
 
     return schemas.TokenResponse(access_token=access_token)
@@ -107,6 +107,19 @@ def get_current_user_dependency(
         )
 
     return user
+
+def get_current_admin_dependency(
+    current_user: models.User = Depends(get_current_user_dependency),
+    db: Session = Depends(get_db)
+) -> models.User:
+    """Dependency to ensure user is authenticated and is an admin"""
+    db_user = db.query(models.User).filter(models.User.id == current_user.id).first()
+    if not db_user or not db_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    return db_user
 
 @router.get("/me", response_model=schemas.UserResponse)
 async def get_current_user(
