@@ -6,7 +6,9 @@ import API_URL, {
   register,
   fetchCart,
   removeFromCart,
-  updateCartItem
+  updateCartItem,
+  checkout,
+  fetchOrders
 } from './api.js'
 
 // App state
@@ -173,15 +175,52 @@ async function handleCheckout() {
     return
   }
 
-  // Will implement in Step 7
-  console.log('Checkout clicked')
+  try {
+    checkoutBtn.disabled = true
+    const order = await checkout(state.token)
+
+    // Show order confirmation
+    state.currentOrder = order
+    displayOrderConfirmation(order)
+
+    // Clear cart
+    state.cart = []
+    updateCart()
+  } catch (error) {
+    console.error('Checkout error:', error)
+    alert('Checkout failed: ' + error.message)
+  } finally {
+    checkoutBtn.disabled = false
+  }
+}
+
+function displayOrderConfirmation(order) {
+  const confirmationHTML = `
+    <h3>✓ Order Placed!</h3>
+    <p>Thank you for your purchase.</p>
+    <p>Order ID: <strong>#${order.id}</strong></p>
+    <p>Total: <strong>$${order.total_price.toFixed(2)}</strong></p>
+    <p>Status: <strong>${order.status}</strong></p>
+    <h4>Items Ordered:</h4>
+    <ul style="text-align: left; padding-left: 20px;">
+      ${order.items.map(item => `
+        <li>${item.product.name} x${item.quantity} @ $${item.price_at_purchase.toFixed(2)}</li>
+      `).join('')}
+    </ul>
+    <button id="newOrderBtn" class="btn btn-primary full-width">Place Another Order</button>
+  `
+
+  orderConfirmation.innerHTML = confirmationHTML
+  orderConfirmation.classList.remove('hidden')
+
+  // Re-attach event listener
+  document.getElementById('newOrderBtn').addEventListener('click', handleNewOrder)
 }
 
 function handleNewOrder() {
   orderConfirmation.classList.add('hidden')
   state.currentOrder = null
-  state.cart = []
-  updateUI()
+  updateCart()
 }
 
 // Product Functions
