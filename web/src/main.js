@@ -1,60 +1,147 @@
 import './style.css'
-import javascriptLogo from './assets/javascript.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import { setupCounter } from './counter.js'
+import API_URL from './api.js'
 
-document.querySelector('#app').innerHTML = `
-<section id="center">
-  <div class="hero">
-    <img src="${heroImg}" class="base" width="170" height="179">
-    <img src="${javascriptLogo}" class="framework" alt="JavaScript logo"/>
-    <img src="${viteLogo}" class="vite" alt="Vite logo" />
-  </div>
-  <div>
-    <h1>Get started</h1>
-    <p>Edit <code>src/main.js</code> and save to test <code>HMR</code></p>
-  </div>
-  <button id="counter" type="button" class="counter"></button>
-</section>
+// App state
+const state = {
+  isLoggedIn: false,
+  user: null,
+  token: null,
+  cart: [],
+  products: [],
+  currentOrder: null,
+}
 
-<div class="ticks"></div>
+// DOM Elements
+const authBtn = document.getElementById('authBtn')
+const authModal = document.getElementById('authModal')
+const closeAuthBtn = document.getElementById('closeAuthBtn')
+const loginForm = document.getElementById('loginForm')
+const registerForm = document.getElementById('registerForm')
+const switchToRegisterBtn = document.getElementById('switchToRegisterBtn')
+const switchToLoginBtn = document.getElementById('switchToLoginBtn')
+const loginFormElement = document.getElementById('loginFormElement')
+const registerFormElement = document.getElementById('registerFormElement')
+const productsGrid = document.getElementById('productsGrid')
+const cartItems = document.getElementById('cartItems')
+const checkoutBtn = document.getElementById('checkoutBtn')
+const continueShoppingBtn = document.getElementById('continueShoppingBtn')
+const orderConfirmation = document.getElementById('orderConfirmation')
+const newOrderBtn = document.getElementById('newOrderBtn')
 
-<section id="next-steps">
-  <div id="docs">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#documentation-icon"></use></svg>
-    <h2>Documentation</h2>
-    <p>Your questions, answered</p>
-    <ul>
-      <li>
-        <a href="https://vite.dev/" target="_blank">
-          <img class="logo" src="${viteLogo}" alt="" />
-          Explore Vite
-        </a>
-      </li>
-      <li>
-        <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank">
-          <img class="button-icon" src="${javascriptLogo}" alt="">
-          Learn more
-        </a>
-      </li>
-    </ul>
-  </div>
-  <div id="social">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#social-icon"></use></svg>
-    <h2>Connect with us</h2>
-    <p>Join the Vite community</p>
-    <ul>
-      <li><a href="https://github.com/vitejs/vite" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#github-icon"></use></svg>GitHub</a></li>
-      <li><a href="https://chat.vite.dev/" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#discord-icon"></use></svg>Discord</a></li>
-      <li><a href="https://x.com/vite_js" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#x-icon"></use></svg>X.com</a></li>
-      <li><a href="https://bsky.app/profile/vite.dev" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#bluesky-icon"></use></svg>Bluesky</a></li>
-    </ul>
-  </div>
-</section>
+// Event Listeners
+authBtn.addEventListener('click', () => {
+  if (state.isLoggedIn) {
+    logout()
+  } else {
+    authModal.classList.remove('hidden')
+  }
+})
 
-<div class="ticks"></div>
-<section id="spacer"></section>
-`
+closeAuthBtn.addEventListener('click', () => {
+  authModal.classList.add('hidden')
+})
 
-setupCounter(document.querySelector('#counter'))
+switchToRegisterBtn.addEventListener('click', () => {
+  loginForm.classList.add('hidden')
+  registerForm.classList.remove('hidden')
+})
+
+switchToLoginBtn.addEventListener('click', () => {
+  registerForm.classList.add('hidden')
+  loginForm.classList.remove('hidden')
+})
+
+loginFormElement.addEventListener('submit', handleLogin)
+registerFormElement.addEventListener('submit', handleRegister)
+checkoutBtn.addEventListener('click', handleCheckout)
+newOrderBtn.addEventListener('click', handleNewOrder)
+
+// Auth Functions
+async function handleLogin(e) {
+  e.preventDefault()
+  const formData = new FormData(loginFormElement)
+  // Will implement in next step
+  console.log('Login form submitted')
+}
+
+async function handleRegister(e) {
+  e.preventDefault()
+  const formData = new FormData(registerFormElement)
+  // Will implement in next step
+  console.log('Register form submitted')
+}
+
+function logout() {
+  state.isLoggedIn = false
+  state.user = null
+  state.token = null
+  state.cart = []
+  updateUI()
+}
+
+// Cart Functions
+async function handleCheckout() {
+  // Will implement in later steps
+  console.log('Checkout clicked')
+}
+
+function handleNewOrder() {
+  orderConfirmation.classList.add('hidden')
+  state.currentOrder = null
+  state.cart = []
+  updateUI()
+}
+
+// UI Updates
+function updateUI() {
+  updateAuthBtn()
+  updateCart()
+}
+
+function updateAuthBtn() {
+  if (state.isLoggedIn) {
+    authBtn.textContent = `Logout (${state.user?.full_name})`
+  } else {
+    authBtn.textContent = 'Login'
+  }
+}
+
+function updateCart() {
+  const total = state.cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0)
+
+  if (state.cart.length === 0) {
+    cartItems.innerHTML = '<p class="empty-message">Your cart is empty</p>'
+  } else {
+    cartItems.innerHTML = state.cart.map(item => `
+      <div class="cart-item">
+        <div class="cart-item-info">
+          <div class="cart-item-name">${item.product.name}</div>
+          <div class="cart-item-price">$${item.product.price.toFixed(2)}</div>
+          <div class="cart-item-quantity">
+            <button>-</button>
+            <input type="number" value="${item.quantity}" min="1" readonly />
+            <button>+</button>
+            <button class="cart-item-remove">Remove</button>
+          </div>
+        </div>
+      </div>
+    `).join('')
+  }
+
+  document.getElementById('subtotal').textContent = `$${total.toFixed(2)}`
+  document.getElementById('tax').textContent = `$${(total * 0.1).toFixed(2)}`
+  document.getElementById('total').textContent = `$${(total * 1.1).toFixed(2)}`
+
+  checkoutBtn.disabled = state.cart.length === 0 || !state.isLoggedIn
+  continueShoppingBtn.disabled = orderConfirmation.classList.contains('hidden') === false
+}
+
+// Initialize
+function init() {
+  console.log('Shopping Cart App Initialized')
+  console.log('API URL:', API_URL)
+  updateUI()
+  // Will load products in next step
+}
+
+init()
