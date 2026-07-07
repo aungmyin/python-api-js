@@ -38,6 +38,10 @@ const checkoutBtn = document.getElementById('checkoutBtn')
 const continueShoppingBtn = document.getElementById('continueShoppingBtn')
 const orderConfirmation = document.getElementById('orderConfirmation')
 const newOrderBtn = document.getElementById('newOrderBtn')
+const viewOrdersBtn = document.getElementById('viewOrdersBtn')
+const orderHistorySection = document.getElementById('orderHistorySection')
+const backToCartBtn = document.getElementById('backToCartBtn')
+const orderHistoryList = document.getElementById('orderHistoryList')
 
 // Event Listeners
 authBtn.addEventListener('click', () => {
@@ -67,7 +71,8 @@ switchToLoginBtn.addEventListener('click', () => {
 loginFormElement.addEventListener('submit', handleLogin)
 registerFormElement.addEventListener('submit', handleRegister)
 checkoutBtn.addEventListener('click', handleCheckout)
-newOrderBtn.addEventListener('click', handleNewOrder)
+viewOrdersBtn.addEventListener('click', showOrderHistory)
+backToCartBtn.addEventListener('click', hideOrderHistory)
 
 // Auth Functions
 async function handleLogin(e) {
@@ -224,6 +229,56 @@ function handleNewOrder() {
   updateCart()
 }
 
+async function showOrderHistory() {
+  try {
+    viewOrdersBtn.disabled = true
+    const response = await fetchOrders(state.token)
+    displayOrderHistory(response.items)
+    orderHistorySection.classList.remove('hidden')
+    document.querySelector('.cart-summary').classList.add('hidden')
+    checkoutBtn.classList.add('hidden')
+    continueShoppingBtn.classList.add('hidden')
+  } catch (error) {
+    console.error('Error fetching orders:', error)
+    showMessage('Failed to load orders: ' + error.message, 'error')
+  } finally {
+    viewOrdersBtn.disabled = false
+  }
+}
+
+function hideOrderHistory() {
+  orderHistorySection.classList.add('hidden')
+  document.querySelector('.cart-summary').classList.remove('hidden')
+  checkoutBtn.classList.remove('hidden')
+  continueShoppingBtn.classList.remove('hidden')
+}
+
+function displayOrderHistory(orders) {
+  if (orders.length === 0) {
+    orderHistoryList.innerHTML = '<p class="empty-message">No orders yet</p>'
+    return
+  }
+
+  orderHistoryList.innerHTML = orders.map(order => `
+    <div class="order-item">
+      <div class="order-item-header">
+        <span>Order #${order.id}</span>
+        <span class="order-item-price">$${order.total_price.toFixed(2)}</span>
+      </div>
+      <div class="order-item-date">${new Date(order.created_at).toLocaleDateString()}</div>
+      <span class="order-item-status">${order.status}</span>
+      <div class="order-detail">
+        <h4>Items:</h4>
+        <ul>
+          ${order.items.map(item => `
+            <li>${item.product.name} x${item.quantity} @ $${item.price_at_purchase.toFixed(2)}</li>
+          `).join('')}
+        </ul>
+      </div>
+    </div>
+  `).join('')
+}
+
 // Product Functions
 async function loadProducts() {
   state.isLoadingProducts = true
@@ -322,6 +377,16 @@ window.addProductToCart = async function(productId) {
 function updateUI() {
   updateAuthBtn()
   updateCart()
+  updateOrderHistoryButton()
+}
+
+function updateOrderHistoryButton() {
+  if (state.isLoggedIn) {
+    viewOrdersBtn.classList.remove('hidden')
+  } else {
+    viewOrdersBtn.classList.add('hidden')
+    hideOrderHistory()
+  }
 }
 
 function updateAuthBtn() {
