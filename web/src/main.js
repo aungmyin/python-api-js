@@ -1,5 +1,5 @@
 import './style.css'
-import API_URL from './api.js'
+import API_URL, { fetchProducts, addToCart } from './api.js'
 
 // App state
 const state = {
@@ -9,6 +9,7 @@ const state = {
   cart: [],
   products: [],
   currentOrder: null,
+  isLoadingProducts: false,
 }
 
 // DOM Elements
@@ -92,6 +93,100 @@ function handleNewOrder() {
   updateUI()
 }
 
+// Product Functions
+async function loadProducts() {
+  state.isLoadingProducts = true
+  renderProducts()
+
+  try {
+    const response = await fetchProducts(0, 20)
+    state.products = response.items
+    renderProducts()
+  } catch (error) {
+    console.error('Failed to load products:', error)
+    renderProductError('Failed to load products. Please refresh the page.')
+  } finally {
+    state.isLoadingProducts = false
+  }
+}
+
+function renderProducts() {
+  if (state.isLoadingProducts) {
+    productsGrid.innerHTML = `
+      <div class="product-card">
+        <div class="product-placeholder">Loading products...</div>
+      </div>
+    `
+    return
+  }
+
+  if (state.products.length === 0) {
+    productsGrid.innerHTML = `
+      <div class="product-card">
+        <div class="product-placeholder">No products available</div>
+      </div>
+    `
+    return
+  }
+
+  productsGrid.innerHTML = state.products.map(product => `
+    <div class="product-card">
+      <div class="product-image">
+        📦 ${product.category?.name || 'Uncategorized'}
+      </div>
+      <div class="product-name">${product.name}</div>
+      <div class="product-price">$${product.price.toFixed(2)}</div>
+      <div class="product-description">${product.description || 'No description'}</div>
+      <button class="btn btn-primary full-width" onclick="addProductToCart(${product.id})">
+        Add to Cart
+      </button>
+    </div>
+  `).join('')
+}
+
+function renderProductError(message) {
+  productsGrid.innerHTML = `
+    <div class="product-card">
+      <div class="product-placeholder">${message}</div>
+    </div>
+  `
+}
+
+// Make addProductToCart globally available for onclick handlers
+window.addProductToCart = async function(productId) {
+  if (!state.isLoggedIn) {
+    alert('Please log in to add items to your cart')
+    authModal.classList.remove('hidden')
+    return
+  }
+
+  try {
+    const product = state.products.find(p => p.id === productId)
+    if (!product) return
+
+    await addToCart(productId, 1, state.token)
+
+    // Add to local cart state
+    const existingItem = state.cart.find(item => item.product_id === productId)
+    if (existingItem) {
+      existingItem.quantity += 1
+    } else {
+      state.cart.push({
+        id: Date.now(),
+        product_id: productId,
+        quantity: 1,
+        product: product,
+      })
+    }
+
+    updateCart()
+    alert('Added to cart!')
+  } catch (error) {
+    console.error('Error adding to cart:', error)
+    alert('Failed to add to cart: ' + error.message)
+  }
+}
+
 // UI Updates
 function updateUI() {
   updateAuthBtn()
@@ -118,10 +213,10 @@ function updateCart() {
           <div class="cart-item-name">${item.product.name}</div>
           <div class="cart-item-price">$${item.product.price.toFixed(2)}</div>
           <div class="cart-item-quantity">
-            <button>-</button>
+            <button onclick="decreaseQuantity(${item.id})">-</button>
             <input type="number" value="${item.quantity}" min="1" readonly />
-            <button>+</button>
-            <button class="cart-item-remove">Remove</button>
+            <button onclick="increaseQuantity(${item.id})">+</button>
+            <button class="cart-item-remove" onclick="removeCartItem(${item.id})">Remove</button>
           </div>
         </div>
       </div>
@@ -136,12 +231,34 @@ function updateCart() {
   continueShoppingBtn.disabled = orderConfirmation.classList.contains('hidden') === false
 }
 
+// Cart manipulation functions (global for onclick handlers)
+window.decreaseQuantity = function(itemId) {
+  const item = state.cart.find(i => i.id === itemId)
+  if (item && item.quantity > 1) {
+    item.quantity--
+    updateCart()
+  }
+}
+
+window.increaseQuantity = function(itemId) {
+  const item = state.cart.find(i => i.id === itemId)
+  if (item) {
+    item.quantity++
+    updateCart()
+  }
+}
+
+window.removeCartItem = function(itemId) {
+  state.cart = state.cart.filter(item => item.id !== itemId)
+  updateCart()
+}
+
 // Initialize
 function init() {
   console.log('Shopping Cart App Initialized')
   console.log('API URL:', API_URL)
   updateUI()
-  // Will load products in next step
+  loadProducts()
 }
 
 init()
