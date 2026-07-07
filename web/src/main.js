@@ -1,5 +1,13 @@
 import './style.css'
-import API_URL, { fetchProducts, addToCart } from './api.js'
+import API_URL, {
+  fetchProducts,
+  addToCart,
+  login,
+  register,
+  fetchCart,
+  removeFromCart,
+  updateCartItem
+} from './api.js'
 
 // App state
 const state = {
@@ -35,6 +43,8 @@ authBtn.addEventListener('click', () => {
     logout()
   } else {
     authModal.classList.remove('hidden')
+    loginForm.classList.remove('hidden')
+    registerForm.classList.add('hidden')
   }
 })
 
@@ -61,15 +71,84 @@ newOrderBtn.addEventListener('click', handleNewOrder)
 async function handleLogin(e) {
   e.preventDefault()
   const formData = new FormData(loginFormElement)
-  // Will implement in next step
-  console.log('Login form submitted')
+  const email = formData.get('email')
+  const password = formData.get('password')
+
+  // Get password from correct field
+  const inputs = loginFormElement.querySelectorAll('input')
+  const email_input = inputs[0].value
+  const password_input = inputs[1].value
+
+  try {
+    authBtn.disabled = true
+    const response = await login(email_input, password_input)
+
+    // Store token in localStorage
+    state.token = response.access_token
+    localStorage.setItem('token', response.access_token)
+
+    // Get user info
+    const { getCurrentUser } = await import('./api.js')
+    const user = await getCurrentUser(state.token)
+    state.user = user
+    state.isLoggedIn = true
+
+    // Load user's cart
+    const cartData = await fetchCart(state.token)
+    state.cart = cartData.items
+
+    // Clear forms and close modal
+    loginFormElement.reset()
+    registerFormElement.reset()
+    authModal.classList.add('hidden')
+
+    updateUI()
+    alert(`Welcome, ${user.full_name}!`)
+  } catch (error) {
+    console.error('Login error:', error)
+    alert('Login failed: ' + error.message)
+  } finally {
+    authBtn.disabled = false
+  }
 }
 
 async function handleRegister(e) {
   e.preventDefault()
-  const formData = new FormData(registerFormElement)
-  // Will implement in next step
-  console.log('Register form submitted')
+  const inputs = registerFormElement.querySelectorAll('input')
+  const email = inputs[0].value
+  const fullName = inputs[1].value
+  const password = inputs[2].value
+
+  try {
+    authBtn.disabled = true
+    await register(email, password, fullName)
+
+    // Auto-login after registration
+    const response = await login(email, password)
+    state.token = response.access_token
+    localStorage.setItem('token', response.access_token)
+
+    const { getCurrentUser } = await import('./api.js')
+    const user = await getCurrentUser(state.token)
+    state.user = user
+    state.isLoggedIn = true
+
+    // Load user's cart
+    const cartData = await fetchCart(state.token)
+    state.cart = cartData.items
+
+    loginFormElement.reset()
+    registerFormElement.reset()
+    authModal.classList.add('hidden')
+
+    updateUI()
+    alert(`Welcome, ${user.full_name}! Your account has been created.`)
+  } catch (error) {
+    console.error('Registration error:', error)
+    alert('Registration failed: ' + error.message)
+  } finally {
+    authBtn.disabled = false
+  }
 }
 
 function logout() {
@@ -77,12 +156,24 @@ function logout() {
   state.user = null
   state.token = null
   state.cart = []
+  localStorage.removeItem('token')
   updateUI()
+  alert('You have been logged out')
 }
 
 // Cart Functions
 async function handleCheckout() {
-  // Will implement in later steps
+  if (!state.isLoggedIn) {
+    alert('Please log in to checkout')
+    return
+  }
+
+  if (state.cart.length === 0) {
+    alert('Your cart is empty')
+    return
+  }
+
+  // Will implement in Step 7
   console.log('Checkout clicked')
 }
 
@@ -196,8 +287,12 @@ function updateUI() {
 function updateAuthBtn() {
   if (state.isLoggedIn) {
     authBtn.textContent = `Logout (${state.user?.full_name})`
+    authBtn.classList.remove('btn-secondary')
+    authBtn.classList.add('btn-primary')
   } else {
     authBtn.textContent = 'Login'
+    authBtn.classList.remove('btn-primary')
+    authBtn.classList.add('btn-secondary')
   }
 }
 
@@ -213,10 +308,10 @@ function updateCart() {
           <div class="cart-item-name">${item.product.name}</div>
           <div class="cart-item-price">$${item.product.price.toFixed(2)}</div>
           <div class="cart-item-quantity">
-            <button onclick="decreaseQuantity(${item.id})">-</button>
+            <button onclick="decreaseQuantity(${state.cart.indexOf(item)})">-</button>
             <input type="number" value="${item.quantity}" min="1" readonly />
-            <button onclick="increaseQuantity(${item.id})">+</button>
-            <button class="cart-item-remove" onclick="removeCartItem(${item.id})">Remove</button>
+            <button onclick="increaseQuantity(${state.cart.indexOf(item)})">+</button>
+            <button class="cart-item-remove" onclick="removeCartItem(${state.cart.indexOf(item)})">Remove</button>
           </div>
         </div>
       </div>
@@ -232,31 +327,57 @@ function updateCart() {
 }
 
 // Cart manipulation functions (global for onclick handlers)
-window.decreaseQuantity = function(itemId) {
-  const item = state.cart.find(i => i.id === itemId)
+window.decreaseQuantity = function(index) {
+  const item = state.cart[index]
   if (item && item.quantity > 1) {
     item.quantity--
     updateCart()
   }
 }
 
-window.increaseQuantity = function(itemId) {
-  const item = state.cart.find(i => i.id === itemId)
+window.increaseQuantity = function(index) {
+  const item = state.cart[index]
   if (item) {
     item.quantity++
     updateCart()
   }
 }
 
-window.removeCartItem = function(itemId) {
-  state.cart = state.cart.filter(item => item.id !== itemId)
+window.removeCartItem = function(index) {
+  state.cart.splice(index, 1)
   updateCart()
+}
+
+// Load persisted token on page init
+function restoreSession() {
+  const savedToken = localStorage.getItem('token')
+  if (savedToken) {
+    state.token = savedToken
+    // Verify token is still valid
+    import('./api.js').then(async (module) => {
+      try {
+        const user = await module.getCurrentUser(savedToken)
+        state.user = user
+        state.isLoggedIn = true
+
+        const cartData = await module.fetchCart(savedToken)
+        state.cart = cartData.items
+
+        updateUI()
+      } catch (error) {
+        console.log('Saved token is invalid, clearing...')
+        localStorage.removeItem('token')
+        state.token = null
+      }
+    })
+  }
 }
 
 // Initialize
 function init() {
   console.log('Shopping Cart App Initialized')
   console.log('API URL:', API_URL)
+  restoreSession()
   updateUI()
   loadProducts()
 }
