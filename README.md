@@ -1,12 +1,18 @@
-# Shopping Cart REST API
+# Shopping Cart Application
 
-A full-stack learning project demonstrating a complete REST API with FastAPI, PostgreSQL, and Docker.
+A complete full-stack learning project with a REST API backend and interactive frontend, all running in Docker.
 
 **Tech Stack:**
-- Backend: Python 3.12, FastAPI, SQLAlchemy, Alembic
-- Database: PostgreSQL 16
-- Frontend: (Phase 2) Vanilla JavaScript + Vite
-- Containerization: Docker & Docker Compose
+- **Backend:** Python 3.12, FastAPI, SQLAlchemy, Alembic
+- **Database:** PostgreSQL 16
+- **Frontend:** Vanilla JavaScript, Vite, HTML5, CSS3
+- **Containerization:** Docker & Docker Compose
+
+**Architecture:**
+- FastAPI REST API with JWT authentication
+- PostgreSQL database with migrations
+- Vanilla JS frontend (no frameworks)
+- Docker Compose orchestration
 
 ---
 
@@ -23,19 +29,32 @@ A full-stack learning project demonstrating a complete REST API with FastAPI, Po
 docker compose up --build
 ```
 
-This starts:
-- **PostgreSQL** on `localhost:5432`
-- **FastAPI** on `localhost:8000` with Swagger UI at `/docs`
-- **(Phase 2)** Vite frontend on `localhost:5173`
+This starts three services:
+- **PostgreSQL** on `localhost:5432` (database)
+- **FastAPI API** on `localhost:8000` (REST API)
+- **Vite frontend** on `localhost:5173` (interactive UI)
 
-### Verify It's Working
+### Access the Application
+
+| Service | URL | Purpose |
+|---------|-----|---------|
+| **Shopping App** | http://localhost:5173 | Frontend UI (register, login, shop, checkout) |
+| **API Docs** | http://localhost:8000/docs | Swagger UI (test endpoints directly) |
+| **API Health** | http://localhost:8000/health | Health check endpoint |
+
+### Quick Verification
 
 ```bash
+# Check API is running
 curl http://localhost:8000/health
 # Response: {"status":"ok"}
-```
 
-Open [http://localhost:8000/docs](http://localhost:8000/docs) in your browser to see the interactive Swagger UI.
+# View API documentation
+open http://localhost:8000/docs
+
+# Open shopping app
+open http://localhost:5173
+```
 
 ---
 
@@ -412,6 +431,127 @@ docker compose run api alembic upgrade head
 
 ---
 
+## Phase 2: Frontend (Vanilla JavaScript + Vite)
+
+The `web/` folder contains a complete shopping cart UI built with vanilla JavaScript and Vite.
+
+### Frontend Tech Stack
+- **Vite:** Modern build tool with hot module reload
+- **Vanilla JavaScript:** No frameworks—just DOM APIs and Fetch
+- **CSS3:** Responsive design with mobile-first approach
+- **Fetch API:** HTTP client for REST API calls
+
+### Frontend Features
+
+**User Authentication:**
+- Register new account
+- Login with email/password
+- Session persistence (localStorage token)
+- Logout clears token and cart
+- Auto-login after registration
+
+**Shopping Experience:**
+- Browse products from database
+- Filter by category
+- Add items to cart
+- Update quantities
+- Remove items
+- View cart totals (subtotal + tax)
+
+**Checkout:**
+- Place order (converts cart to order)
+- Order confirmation with details
+- Clear cart after checkout
+- View past orders with items
+
+**UI/UX Polish:**
+- Responsive layout (mobile, tablet, desktop)
+- In-page success/error messages (no alerts)
+- Button loading states during API calls
+- Dark mode support
+- Touch-friendly controls
+- Smooth animations and transitions
+- Form validation and error handling
+
+### Running the Frontend
+
+Everything runs with `docker compose up --build`. Then:
+
+**Frontend URL:** http://localhost:5173
+
+**API Docs:** http://localhost:8000/docs (test endpoints here)
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `web/index.html` | HTML structure for UI |
+| `web/src/main.js` | App state, event handlers, DOM updates |
+| `web/src/api.js` | API wrapper functions (fetch calls) |
+| `web/src/style.css` | Responsive CSS with dark mode |
+| `web/vite.config.js` | Vite config (host, port, hot reload) |
+
+### Frontend Architecture
+
+**Separation of Concerns:**
+- `api.js` — All API calls (encapsulated, reusable)
+- `main.js` — State management and UI logic
+- `style.css` — Presentation (responsive, accessible)
+- `index.html` — Semantic structure
+
+**State Management:**
+```javascript
+const state = {
+  isLoggedIn: false,
+  user: null,
+  token: null,
+  cart: [],
+  products: [],
+  currentOrder: null,
+}
+```
+
+**Session Persistence:**
+- JWT token stored in `localStorage`
+- Auto-restored on page load
+- Token sent as `Authorization: Bearer <token>` header
+
+### Testing the Frontend
+
+**Full shopping flow:**
+1. Open http://localhost:5173
+2. Click "Login" → Register new account
+3. Browse products (loaded from `/products` endpoint)
+4. Add items to cart
+5. View cart totals
+6. Checkout → see order confirmation
+7. Click "View Order History" → see past orders
+8. Logout → token cleared, cart emptied
+
+**Responsive testing:**
+- Resize browser to mobile (< 600px) → single-column layout
+- Resize to tablet (600-1024px) → two-column grid
+- Full desktop (> 1024px) → multi-column with sidebar
+
+### API Integration Points
+
+Frontend calls these endpoints:
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /register` | Create account |
+| `POST /login` | Get JWT token |
+| `GET /me` | Get current user |
+| `GET /products` | Fetch product list |
+| `POST /cart/items` | Add to cart |
+| `PUT /cart/items/{id}` | Update quantity |
+| `DELETE /cart/items/{id}` | Remove item |
+| `GET /cart` | View cart |
+| `POST /checkout` | Place order |
+| `GET /orders` | View order history |
+
+---
+
 ## What You Learned
 
 ✅ **Backend Architecture:** REST API design with FastAPI  
@@ -420,6 +560,9 @@ docker compose run api alembic upgrade head
 ✅ **Testing:** Pytest with fixtures and test isolation  
 ✅ **DevOps:** Docker & Docker Compose for local development  
 ✅ **API Design:** Pagination, filtering, relationships  
+✅ **Frontend Development:** Vanilla JS without frameworks  
+✅ **UI/UX:** Responsive design, state management, form handling  
+✅ **API Integration:** Fetch, token management, error handling  
 
 ---
 
