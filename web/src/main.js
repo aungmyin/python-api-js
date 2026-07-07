@@ -105,10 +105,10 @@ async function handleLogin(e) {
     authModal.classList.add('hidden')
 
     updateUI()
-    alert(`Welcome, ${user.full_name}!`)
+    showMessage(`Welcome, ${user.full_name}!`, 'success')
   } catch (error) {
     console.error('Login error:', error)
-    alert('Login failed: ' + error.message)
+    showMessage('Login failed: ' + error.message, 'error')
   } finally {
     authBtn.disabled = false
   }
@@ -144,10 +144,10 @@ async function handleRegister(e) {
     authModal.classList.add('hidden')
 
     updateUI()
-    alert(`Welcome, ${user.full_name}! Your account has been created.`)
+    showMessage(`Welcome, ${user.full_name}! Your account has been created.`, 'success')
   } catch (error) {
     console.error('Registration error:', error)
-    alert('Registration failed: ' + error.message)
+    showMessage('Registration failed: ' + error.message, 'error')
   } finally {
     authBtn.disabled = false
   }
@@ -160,7 +160,7 @@ function logout() {
   state.cart = []
   localStorage.removeItem('token')
   updateUI()
-  alert('You have been logged out')
+  showMessage('You have been logged out', 'success')
 }
 
 // Cart Functions
@@ -186,9 +186,10 @@ async function handleCheckout() {
     // Clear cart
     state.cart = []
     updateCart()
+    showMessage('Order placed successfully!', 'success')
   } catch (error) {
     console.error('Checkout error:', error)
-    alert('Checkout failed: ' + error.message)
+    showMessage('Checkout failed: ' + error.message, 'error')
   } finally {
     checkoutBtn.disabled = false
   }
@@ -310,10 +311,10 @@ window.addProductToCart = async function(productId) {
     }
 
     updateCart()
-    alert('Added to cart!')
+    showMessage('Added to cart!', 'success')
   } catch (error) {
     console.error('Error adding to cart:', error)
-    alert('Failed to add to cart: ' + error.message)
+    showMessage('Failed to add to cart: ' + error.message, 'error')
   }
 }
 
@@ -410,6 +411,22 @@ function restoreSession() {
       }
     })
   }
+}
+
+// Message Display Functions
+function showMessage(message, type = 'success') {
+  const messageEl = document.createElement('div')
+  messageEl.className = `${type}-message`
+  messageEl.textContent = message
+
+  // Insert at top of main products section
+  const productSection = document.querySelector('.products-section')
+  productSection.insertBefore(messageEl, productSection.firstChild)
+
+  // Auto-remove after 3 seconds
+  setTimeout(() => {
+    messageEl.remove()
+  }, 3000)
 }
 
 // Initialize
