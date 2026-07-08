@@ -13,7 +13,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # JWT Token payload validation
 class TokenPayload(BaseModel):
     """Expected JWT payload structure"""
-    sub: int
+    sub: str  # Must be string per JWT standard
     exp: int
     iat: int
     type: str = "access"

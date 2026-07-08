@@ -59,9 +59,9 @@ async def login(
             detail="Invalid email or password"
         )
 
-    # Create access token
+    # Create access token (sub must be string per JWT standard)
     access_token = auth.create_access_token(
-        data={"sub": user.id}
+        data={"sub": str(user.id)}
     )
 
     return schemas.TokenResponse(access_token=access_token)
@@ -91,11 +91,13 @@ def get_current_user_dependency(
 
     try:
         payload = auth.decode_access_token(token)
-        user_id = int(payload.get("sub"))
+        user_id = int(payload.get("sub"))  # Convert sub from string to int
     except Exception as e:
+        import sys
+        print(f"Token validation error: {str(e)}", file=sys.stderr)
         raise HTTPException(
             status_code=401,
-            detail="Invalid token",
+            detail=f"Invalid token: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"}
         )
 
