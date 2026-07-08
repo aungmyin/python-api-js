@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, status
 from sqlalchemy.orm import Session
 from database import get_db
 from auth_routes import get_current_user_dependency
 import models
 import schemas
 from typing import Optional, List
+from pydantic import BaseModel, Field
 
 router = APIRouter()
 
@@ -28,19 +29,18 @@ class CartResponse(schemas.BaseModel):
     class Config:
         from_attributes = True
 
-class AddToCartRequest(schemas.BaseModel):
-    product_id: int
-    quantity: int = 1
+class AddToCartRequest(BaseModel):
+    product_id: int = Field(..., gt=0, description="Product ID must be positive")
+    quantity: int = Field(1, gt=0, le=1000, description="Quantity must be 1-1000")
 
-class UpdateCartItemRequest(schemas.BaseModel):
-    quantity: int
+class UpdateCartItemRequest(BaseModel):
+    quantity: int = Field(..., gt=0, le=1000, description="Quantity must be 1-1000")
 
 # ============ CART ENDPOINTS ============
 
 @router.get("/cart", response_model=CartResponse)
 async def get_cart(
     current_user: models.User = Depends(get_current_user_dependency),
-    authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
     """Get current user's cart with all items"""
@@ -65,7 +65,6 @@ async def get_cart(
 async def add_to_cart(
     add_request: AddToCartRequest,
     current_user: models.User = Depends(get_current_user_dependency),
-    authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
     """Add a product to the user's cart"""
@@ -110,7 +109,6 @@ async def update_cart_item(
     item_id: int,
     update_request: UpdateCartItemRequest,
     current_user: models.User = Depends(get_current_user_dependency),
-    authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
     """Update quantity of an item in the cart"""
@@ -142,7 +140,6 @@ async def update_cart_item(
 async def remove_from_cart(
     item_id: int,
     current_user: models.User = Depends(get_current_user_dependency),
-    authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
     """Remove an item from the cart"""
@@ -167,7 +164,6 @@ async def remove_from_cart(
 @router.delete("/cart", status_code=204)
 async def clear_cart(
     current_user: models.User = Depends(get_current_user_dependency),
-    authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
     """Clear all items from the user's cart"""

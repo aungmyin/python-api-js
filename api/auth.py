@@ -71,10 +71,7 @@ def decode_access_token(token: str) -> dict:
         if token_payload.type != "access":
             raise ValueError("Invalid token type")
 
-        # ✅ Validate expiration
-        if datetime.utcfromtimestamp(token_payload.exp) < datetime.utcnow():
-            raise ValueError("Token expired")
-
+        # Note: PyJWT already validates expiration automatically
         return payload
 
     except jwt.ExpiredSignatureError:

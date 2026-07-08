@@ -45,7 +45,6 @@ class CheckoutRequest(schemas.BaseModel):
 @router.post("/checkout", response_model=OrderResponse)
 async def checkout(
     current_user: models.User = Depends(get_current_user_dependency),
-    authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
     """Convert cart to order with stock management and transaction safety"""
@@ -65,14 +64,16 @@ async def checkout(
                 detail="Cannot checkout with empty cart"
             )
 
-        # ✅ PHASE 1: Validate all items and stock BEFORE any database changes
+        # ✅ PHASE 1: Validate all items and stock with row-level locking
+        # Lock prevents race condition (two checkouts buying last item)
         cart_total = 0
         order_items_data = []
 
         for cart_item in cart.items:
+            # ✅ Lock the product row to prevent race condition
             product = db.query(models.Product).filter(
                 models.Product.id == cart_item.product_id
-            ).first()
+            ).with_for_update().first()
 
             if not product:
                 raise HTTPException(
@@ -80,7 +81,7 @@ async def checkout(
                     detail=f"Product {cart_item.product_id} no longer exists"
                 )
 
-            # ✅ Check sufficient stock
+            # ✅ Check sufficient stock (protected by lock)
             if product.stock < cart_item.quantity:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -158,7 +159,6 @@ async def checkout(
 @router.get("/orders", response_model=OrderListResponse)
 async def get_orders(
     current_user: models.User = Depends(get_current_user_dependency),
-    authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
     """Get all orders for current user"""
@@ -175,7 +175,6 @@ async def get_orders(
 async def get_order(
     order_id: int,
     current_user: models.User = Depends(get_current_user_dependency),
-    authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
     """Get a specific order (user can only see their own)"""
