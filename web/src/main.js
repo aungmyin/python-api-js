@@ -484,9 +484,21 @@ function showMessage(message, type = 'success') {
   messageEl.className = `${type}-message`
   messageEl.textContent = message
 
-  // Insert at top of main products section
-  const productSection = document.querySelector('.products-section')
-  productSection.insertBefore(messageEl, productSection.firstChild)
+  // Check if modal is open, if so show message inside modal
+  const modal = document.getElementById('authModal')
+  const isModalOpen = modal && !modal.classList.contains('hidden')
+
+  if (isModalOpen) {
+    // Show inside modal
+    messageEl.style.position = 'static'
+    messageEl.style.margin = '10px 0'
+    const authContainer = document.querySelector('.auth-container')
+    authContainer.insertBefore(messageEl, authContainer.firstChild)
+  } else {
+    // Show at top of products section
+    const productSection = document.querySelector('.products-section')
+    productSection.insertBefore(messageEl, productSection.firstChild)
+  }
 
   // Auto-remove after 3 seconds
   setTimeout(() => {

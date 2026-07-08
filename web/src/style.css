@@ -561,18 +561,22 @@ body {
 .error-message {
   background-color: #ffebee;
   color: #c62828;
-  padding: 12px;
+  padding: 12px 15px;
   border-radius: 4px;
   margin-bottom: 12px;
   font-size: 14px;
   border-left: 4px solid #c62828;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(198, 40, 40, 0.2);
+  animation: slideIn 0.3s ease-out;
 }
 
 @media (prefers-color-scheme: dark) {
   .error-message {
     background-color: #3a1a1a;
-    color: #ff6b6b;
+    color: #ff9999;
     border-left-color: #ff6b6b;
+    box-shadow: 0 2px 4px rgba(255, 107, 107, 0.3);
   }
 }
 
@@ -580,18 +584,33 @@ body {
 .success-message {
   background-color: #e8f5e9;
   color: #2e7d32;
-  padding: 12px;
+  padding: 12px 15px;
   border-radius: 4px;
   margin-bottom: 12px;
   font-size: 14px;
   border-left: 4px solid #2e7d32;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(46, 125, 50, 0.2);
+  animation: slideIn 0.3s ease-out;
 }
 
 @media (prefers-color-scheme: dark) {
   .success-message {
     background-color: #1b3a1b;
-    color: #66bb6a;
+    color: #99dd99;
     border-left-color: #66bb6a;
+    box-shadow: 0 2px 4px rgba(102, 187, 106, 0.3);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
